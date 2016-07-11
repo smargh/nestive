@@ -18,6 +18,13 @@ describe NestiveController do
       get :index
       assert_select '#some-area', 'Some content'
     end
+
+    it 'handles nested areas' do
+      get :nested_areas
+      assert_select 'title', 'Nested Areas'
+      assert_select '#section1', 'Section 1 Title'
+      assert_select '#section2', 'Section 2 Title'
+    end
   end
 
   context '#append' do

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= area :title, 'Nested Areas' %></title>
+  </head>
+  <body>
+    <%= yield %>
+    <div id="section1">
+    <%= area :section1 do %>
+      <%= area :title, 'Section 1 Title' %>
+    <% end %>
+    </div>
+
+    <div id="section2">
+    <%= area :section2 do %>
+      <%= area :title, 'Section 2 Title' %>
+    <% end %>
+    </div>
+  </body>
+</html>
