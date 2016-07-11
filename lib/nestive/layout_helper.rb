@@ -125,9 +125,13 @@ module Nestive
     # @param [String] content
     #   An optional String of content to add to the area as you declare it.
     def area(name, content=nil, &block)
+      initialize_instance_vars
+      @_areas << name
       content = capture(&block) if block_given?
       append name, content
-      render_area name
+      output = render_area name
+      @_areas.pop
+      output
     end
 
     # Appends content to an area previously defined or modified in parent layout(s). You can provide
@@ -201,7 +205,7 @@ module Nestive
     # @param names
     #   A list of area names to purge
     def purge(*names)
-      names.each{ |name| replace(name, nil)}
+      names.each { |name| replace(name, nil) }
     end
 
     private
@@ -221,10 +225,17 @@ module Nestive
     # @example
     #   add_instruction_to_area(:sidebar, :push, "More content.")
     def add_instruction_to_area(name, instruction, value)
-      @_area_for ||= {}
-      @_area_for[name] ||= []
-      @_area_for[name] << [instruction, value]
+      initialize_instance_vars
+      get_buffered_area(name) << [instruction, value]
       nil
+    end
+
+    def get_buffered_area(name)
+      route = @_areas + [:instructions]
+      location = @_buffer.dig(*route)
+      array = location.eql?({}) ? [] : location
+      return @_buffer[name][:instructions] = array if @_areas.empty?
+      @_buffer.dig(*@_areas)[:instructions] = array
     end
 
     # Take the instructions we've gathered for the area and replay them one after the other on
@@ -235,11 +246,19 @@ module Nestive
     # happen) due to the way they are gathered by the layout extension process (in reverse).
     def render_area(name)
       [].tap do |output|
-        @_area_for.fetch(name, []).reverse_each do |method_name, content|
+        get_buffered_area(name).reverse_each do |method_name, content|
           output.public_send method_name, content
         end
       end.join.html_safe
     end
 
+    def initialize_instance_vars
+      @_areas ||= []
+      @_buffer ||= autovivifying_hash
+    end
+
+    def autovivifying_hash
+      Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
+    end
   end
 end
